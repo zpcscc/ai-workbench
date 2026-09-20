@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.pnpm-store/
+src-tauri/target/
+
+# Local environment files
+.env
+.env.*
+!.env.example

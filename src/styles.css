@@ -1,0 +1,26 @@
+:root,
+:root[data-theme="light"] {
+  --canvas: 247 247 248;
+  --surface: 255 255 255;
+  --muted: 241 241 243;
+  --ink: 24 24 27;
+  --subtle: 82 82 91;
+  --accent: 79 70 229;
+  --accent-ink: 255 255 255;
+  --border: 228 228 231;
+}
+
+:root[data-theme="dark"] {
+  --canvas: 16 16 18;
+  --surface: 28 28 31;
+  --muted: 39 39 42;
+  --ink: 244 244 245;
+  --subtle: 161 161 170;
+  --accent: 129 140 248;
+  --accent-ink: 24 24 27;
+  --border: 63 63 70;
+}
+
+html, body, #root { min-height: 100%; }
+body { margin: 0; background: rgb(var(--canvas)); }
+* { box-sizing: border-box; }

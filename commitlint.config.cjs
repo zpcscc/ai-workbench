@@ -1,0 +1,60 @@
+/** @type {import('@commitlint/types').UserConfig} */
+module.exports = {
+  parserPreset: {
+    parserOpts: { headerPattern: /^(.*)(?:\((.*)\))?!?: (.*)$/ },
+  },
+  rules: {
+    "body-leading-blank": [1, "always"],
+    "body-max-line-length": [2, "always", 100],
+    "footer-leading-blank": [1, "always"],
+    "footer-max-line-length": [2, "always", 100],
+    "header-max-length": [2, "always", 100],
+    "subject-case": [2, "never", ["sentence-case", "start-case", "pascal-case", "upper-case"]],
+    "subject-empty": [2, "never"],
+    "subject-full-stop": [2, "never", "."],
+    "type-case": [2, "always", "lower-case"],
+    "type-empty": [2, "never"],
+    "type-enum": [
+      2,
+      "always",
+      ["✨feat", "🐛fix", "🔥update", "📚docs", "💎style", "📦refactor", "🚀perf", "🚨test", "🛠build", "⚙️ ci", "🗑revert"],
+    ],
+  },
+  prompt: {
+    message: {
+      skip: "该字段可以通过回车跳过",
+      max: "最大字符数",
+      min: "最小字符数",
+      emptyWarning: "该字段不能为空",
+      upperLimitWarning: "超出字符数限制",
+      lowerLimitWarning: "字符小于下限",
+    },
+    questions: {
+      type: {
+        description: "选择当前 commit 的类型",
+        enum: {
+          "✨feat": { description: "新功能", title: "✨Features", emoji: "✨" },
+          "🔥update": { description: "功能更新", title: "🔥Update", emoji: "🔥" },
+          "🐛fix": { description: "修复 bug", title: "🐛Bug Fixes", emoji: "🐛" },
+          "📚docs": { description: "文档更新", title: "📚Documentation", emoji: "📚" },
+          "💎style": { description: "代码风格的更改", title: "💎Styles", emoji: "💎" },
+          "📦refactor": { description: "代码重构", title: "📦Code Refactoring", emoji: "📦" },
+          "🚀perf": { description: "性能提升", title: "🚀Performance Improvements", emoji: "🚀" },
+          "🚨test": { description: "添加或更改测试", title: "🚨Tests", emoji: "🚨" },
+          "🛠build": { description: "构建系统或依赖更新", title: "🛠Builds", emoji: "🛠" },
+          "⚙️ ci": { description: "CI 配置变更", title: "⚙️Continuous Integrations", emoji: "⚙️" },
+          "🗑revert": { description: "恢复以前的提交", title: "🗑Reverts", emoji: "🗑" },
+        },
+      },
+      scope: { description: "变动范围、模块或文件名" },
+      subject: { description: "写一个简短的描述" },
+      body: { description: "提供更改的详细说明" },
+      isBreaking: { description: "是否有破坏性更新？" },
+      breakingBody: { description: "破坏性变更的详细描述" },
+      breaking: { description: "破坏性变更的简短描述" },
+      isIssueAffected: { description: "此更改是否影响任何已知问题？" },
+      issuesBody: { description: "请输入问题关联的详细说明" },
+      issues: { description: "添加问题参考，例如 fix #123" },
+    },
+  },
+};

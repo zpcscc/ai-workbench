@@ -1,0 +1,31 @@
+{
+  "name": "ai-workbench",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "commit": "git-cz",
+    "tauri": "tauri",
+    "desktop:dev": "tauri dev",
+    "desktop:build": "tauri build"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "2.11.1",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.11.4",
+    "@commitlint/cz-commitlint": "21.2.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.1",
+    "commitizen": "4.3.2",
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2",
+    "unocss": "66.10.5",
+    "vite": "8.3.0"
+  }
+}
