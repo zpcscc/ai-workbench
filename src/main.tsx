@@ -2,10 +2,10 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import "uno.css";
 import "./styles.css";
-import { App } from "./app";
+import { WorkbenchApp } from "./app/workbench-app";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <App />
+    <WorkbenchApp />
   </React.StrictMode>,
 );
