@@ -2,6 +2,7 @@ node_modules/
 dist/
 .pnpm-store/
 src-tauri/target/
+.DS_Store
 
 # Local environment files
 .env

@@ -1,4 +1,4 @@
-import { themeLabels, type Theme } from "../../hooks/use-theme";
+import { themeLabels, type Theme } from "../../types/theme";
 
 type ThemeSelectorProps = {
   theme: Theme;
@@ -11,7 +11,7 @@ export function ThemeSelector({ theme, onChange }: ThemeSelectorProps) {
       {(Object.keys(themeLabels) as Theme[]).map((value) => (
         <button
           aria-pressed={theme === value}
-          className={`rounded-xl border p-4 text-left transition-colors ${theme === value ? "border-accent bg-muted" : "border-border bg-surface hover:bg-muted"}`}
+          className="app-choice p-4"
           key={value}
           onClick={() => onChange(value)}
           type="button"

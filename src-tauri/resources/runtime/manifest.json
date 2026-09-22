@@ -1,0 +1,10 @@
+{
+  "version": "b11097",
+  "source": "https://github.com/ggml-org/llama.cpp/releases/tag/b11097",
+  "archives": {
+    "macos-arm64": {
+      "filename": "llama-b11097-bin-macos-arm64.tar.gz",
+      "sha256": "ab8ae9389e8909b0ff37ba8e526e55a921a42a646ab7c1f080b3a6113160ae46"
+    }
+  }
+}

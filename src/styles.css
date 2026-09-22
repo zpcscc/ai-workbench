@@ -1,26 +1,165 @@
 :root,
 :root[data-theme="light"] {
-  --canvas: 247 247 248;
-  --surface: 255 255 255;
-  --muted: 241 241 243;
-  --ink: 24 24 27;
-  --subtle: 82 82 91;
-  --accent: 79 70 229;
+  --canvas: 243 243 243;
+  --surface: 251 251 251;
+  --muted: 235 235 235;
+  --ink: 30 30 30;
+  --subtle: 97 97 97;
+  --accent: 0 103 192;
   --accent-ink: 255 255 255;
-  --border: 228 228 231;
+  --border: 220 220 220;
+  --control: 251 251 251;
+  --control-hover: 245 245 245;
+  --control-pressed: 235 235 235;
+  --control-border: 209 209 209;
 }
 
 :root[data-theme="dark"] {
-  --canvas: 16 16 18;
-  --surface: 28 28 31;
-  --muted: 39 39 42;
-  --ink: 244 244 245;
-  --subtle: 161 161 170;
-  --accent: 129 140 248;
-  --accent-ink: 24 24 27;
-  --border: 63 63 70;
+  --canvas: 32 32 32;
+  --surface: 43 43 43;
+  --muted: 52 52 52;
+  --ink: 245 245 245;
+  --subtle: 198 198 198;
+  --accent: 96 205 255;
+  --accent-ink: 0 0 0;
+  --border: 74 74 74;
+  --control: 48 48 48;
+  --control-hover: 57 57 57;
+  --control-pressed: 68 68 68;
+  --control-border: 93 93 93;
 }
 
-html, body, #root { min-height: 100%; }
+html, body, #root { height: 100%; min-height: 0; overflow: hidden; }
 body { margin: 0; background: rgb(var(--canvas)); }
 * { box-sizing: border-box; }
+
+button {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: none;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  text-shadow: none;
+}
+
+.app-button,
+.app-input,
+.app-choice {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+.app-button {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgb(var(--control-border));
+  border-radius: 0.375rem;
+  background-color: rgb(var(--control));
+  color: rgb(var(--ink));
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.app-button:hover:not(:disabled) {
+  background-color: rgb(var(--control-hover));
+}
+
+.app-button:active:not(:disabled) {
+  background-color: rgb(var(--control-pressed));
+}
+
+.app-button:disabled {
+  background-color: rgb(var(--control));
+  border-color: rgb(var(--control-border));
+  color: rgb(var(--ink));
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.app-button:disabled.text-subtle,
+.app-button:disabled.disabled\:text-subtle {
+  color: rgb(var(--subtle));
+}
+
+.app-button-primary {
+  background-color: rgb(var(--accent));
+  border-color: rgb(var(--accent));
+  color: rgb(var(--accent-ink));
+}
+
+.app-button-primary:hover:not(:disabled) {
+  background-color: rgb(var(--accent) / 0.88);
+  border-color: rgb(var(--accent) / 0.88);
+}
+
+.app-button-primary:active:not(:disabled) {
+  background-color: rgb(var(--accent) / 0.74);
+  border-color: rgb(var(--accent) / 0.74);
+}
+
+.app-button-primary:disabled {
+  background-color: rgb(var(--accent));
+  border-color: rgb(var(--accent));
+  color: rgb(var(--accent-ink));
+}
+
+.app-button:focus-visible {
+  outline: 2px solid rgb(var(--accent) / 0.7);
+  outline-offset: 2px;
+}
+
+.app-input {
+  width: 100%;
+  border: 1px solid rgb(var(--control-border));
+  border-radius: 0.25rem;
+  background-color: rgb(var(--control));
+  color: rgb(var(--ink));
+  outline: none;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.app-input:hover {
+  background-color: rgb(var(--control-hover));
+}
+
+.app-input:focus {
+  border-color: rgb(var(--accent));
+}
+
+.app-choice {
+  border: 1px solid rgb(var(--control-border));
+  border-radius: 0.5rem;
+  background-color: rgb(var(--control));
+  color: rgb(var(--ink));
+  text-align: left;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.app-choice:hover {
+  background-color: rgb(var(--control-hover));
+}
+
+.app-choice[aria-pressed="true"] {
+  background-color: rgb(var(--accent) / 0.12);
+  border-color: rgb(var(--accent));
+}
+
+.app-choice:focus-visible {
+  outline: 2px solid rgb(var(--accent) / 0.5);
+  outline-offset: 2px;
+}

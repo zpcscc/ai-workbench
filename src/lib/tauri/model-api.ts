@@ -1,32 +1,21 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { DeviceInfo, ModelCatalog } from "../../types/model";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import modelManifest from "../../config/model-manifest.json";
+import type {
+  DeviceInfo,
+  DownloadNetworkPreflight,
+  DownloadNetworkSettings,
+  ModelCatalog,
+  ModelCancellationResult,
+  ModelDownloadResult,
+  ModelDownloadProgress,
+  ModelInstallationStatus,
+  ModelStorageSettings,
+  LocalChatMessage,
+  LocalRuntimeStatus,
+} from "../../types/model";
 
-const browserFallbackCatalog: ModelCatalog = {
-  schemaVersion: 1,
-  generatedAt: "2026-09-20",
-  models: [
-    {
-      id: "qwen3-4b-q4-k-m",
-      name: "Qwen3 4B",
-      family: "Qwen3",
-      capability: "chat",
-      quantization: "Q4_K_M",
-      estimatedDownloadBytes: 2_500_000_000,
-      minimumMemoryGiB: 12,
-      recommendedMemoryGiB: 16,
-      recommended: true,
-      license: "Apache-2.0",
-      source: "official",
-      download: {
-        provider: "huggingface",
-        repository: "Qwen/Qwen3-4B-GGUF",
-        filename: "qwen3-4b-q4_k_m.gguf",
-        revision: "main",
-        sha256: null,
-      },
-    },
-  ],
-};
+const browserFallbackCatalog = modelManifest as ModelCatalog;
 
 export async function getModelCatalog(): Promise<ModelCatalog> {
   try {
@@ -46,4 +35,79 @@ export async function getDeviceInfo(): Promise<DeviceInfo> {
       logicalCpuCores: navigator.hardwareConcurrency || 1,
     };
   }
+}
+
+export async function getModelInstallationStatuses(): Promise<ModelInstallationStatus[]> {
+  try {
+    return await invoke<ModelInstallationStatus[]>("get_model_installation_statuses");
+  } catch {
+    return [];
+  }
+}
+
+export async function getDownloadNetworkSettings(): Promise<DownloadNetworkSettings> {
+  try {
+    return await invoke<DownloadNetworkSettings>("get_download_network_settings");
+  } catch {
+    return { mirrorUrl: null, proxyUrl: null };
+  }
+}
+
+export async function getModelStorageSettings(): Promise<ModelStorageSettings> {
+  try {
+    return await invoke<ModelStorageSettings>("get_model_storage_settings");
+  } catch {
+    return {
+      downloadDirectory: null,
+      installDirectory: null,
+      resolvedDownloadDirectory: "由桌面应用确定",
+      resolvedInstallDirectory: "由桌面应用确定",
+    };
+  }
+}
+
+export async function saveModelStorageSettings(settings: ModelStorageSettings): Promise<ModelStorageSettings> {
+  return invoke<ModelStorageSettings>("save_model_storage_settings", { settings });
+}
+
+export async function saveDownloadNetworkSettings(settings: DownloadNetworkSettings): Promise<DownloadNetworkSettings> {
+  return invoke<DownloadNetworkSettings>("save_download_network_settings", { settings });
+}
+
+export async function checkDownloadNetwork(): Promise<DownloadNetworkPreflight> {
+  return invoke<DownloadNetworkPreflight>("check_download_network");
+}
+
+export async function downloadModel(modelId: string): Promise<ModelDownloadResult> {
+  return invoke<ModelDownloadResult>("download_model", { modelId });
+}
+
+export async function cancelModelDownload(modelId: string): Promise<ModelCancellationResult> {
+  return invoke<ModelCancellationResult>("cancel_model_download", { modelId });
+}
+
+export async function onModelDownloadProgress(
+  callback: (progress: ModelDownloadProgress) => void,
+): Promise<UnlistenFn> {
+  try {
+    return await listen<ModelDownloadProgress>("model-download-progress", (event) => callback(event.payload));
+  } catch {
+    return () => undefined;
+  }
+}
+
+export async function getLocalRuntimeStatus(): Promise<LocalRuntimeStatus> {
+  return invoke<LocalRuntimeStatus>("get_local_runtime_status");
+}
+
+export async function startLocalRuntime(modelId: string): Promise<LocalRuntimeStatus> {
+  return invoke<LocalRuntimeStatus>("start_local_runtime", { modelId });
+}
+
+export async function stopLocalRuntime(): Promise<LocalRuntimeStatus> {
+  return invoke<LocalRuntimeStatus>("stop_local_runtime");
+}
+
+export async function sendLocalChat(messages: LocalChatMessage[]): Promise<LocalChatMessage> {
+  return invoke<LocalChatMessage>("send_local_chat", { messages });
 }

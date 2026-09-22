@@ -17,7 +17,9 @@ export type ModelDefinition = {
   license: string;
   source: "official";
   download: {
+    enabled: boolean;
     provider: string;
+    baseUrl: string;
     repository: string;
     filename: string;
     revision: string;
@@ -29,4 +31,74 @@ export type ModelCatalog = {
   schemaVersion: number;
   generatedAt: string;
   models: ModelDefinition[];
+};
+
+export type ModelInstallState = "notInstalled" | "partial" | "installed" | "comingSoon" | "sourceUnverified";
+
+export type ModelInstallationStatus = {
+  modelId: string;
+  state: ModelInstallState;
+  installedBytes: number;
+  partialBytes: number;
+  installable: boolean;
+};
+
+export type ModelDownloadProgress = {
+  modelId: string;
+  downloadedBytes: number;
+  totalBytes: number;
+  state: "downloading" | "verifying" | "cancelled" | "failed" | "installed";
+};
+
+export type ModelDownloadResult = {
+  modelId: string;
+  installedPath: string;
+  verifiedSha256: string;
+};
+
+export type ModelDownloadError = {
+  code: string;
+  message: string;
+  resumable: boolean;
+};
+
+export type ModelCancellationResult = {
+  modelId: string;
+  cancellationRequested: boolean;
+};
+
+export type DownloadNetworkSettings = {
+  mirrorUrl: string | null;
+  proxyUrl: string | null;
+};
+
+export type DownloadConnectionStatus = {
+  endpoint: string;
+  available: boolean;
+  detail: string;
+};
+
+export type DownloadNetworkPreflight = {
+  direct: DownloadConnectionStatus;
+  mirror: DownloadConnectionStatus | null;
+};
+
+export type ModelStorageSettings = {
+  downloadDirectory: string | null;
+  installDirectory: string | null;
+  resolvedDownloadDirectory: string;
+  resolvedInstallDirectory: string;
+};
+
+export type LocalRuntimeState = "stopped" | "starting" | "ready" | "error";
+
+export type LocalRuntimeStatus = {
+  state: LocalRuntimeState;
+  modelId: string | null;
+  detail: string;
+};
+
+export type LocalChatMessage = {
+  role: "system" | "user" | "assistant";
+  content: string;
 };

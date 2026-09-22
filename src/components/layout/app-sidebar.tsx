@@ -14,8 +14,8 @@ const navigation: Array<{ id: WorkspaceSection; label: string; icon: string; gro
 
 export function AppSidebar({ activeSection, onSectionChange }: SidebarProps) {
   return (
-    <aside className="flex w-full shrink-0 flex-col border-b border-border bg-surface p-4 md:min-h-screen md:w-60 md:border-r md:border-b-0">
-      <div className="mb-8 flex items-center gap-3 px-2">
+    <aside className="flex h-full w-60 shrink-0 flex-col border-r border-border bg-surface p-4">
+      <div className="mb-8 shrink-0 flex items-center gap-3 px-2">
         <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-sm font-bold text-accent-ink">A</span>
         <div>
           <p className="text-sm font-semibold">AI Workbench</p>
@@ -23,13 +23,13 @@ export function AppSidebar({ activeSection, onSectionChange }: SidebarProps) {
         </div>
       </div>
 
-      <nav aria-label="工作台功能" className="flex flex-1 flex-row gap-1 overflow-x-auto md:flex-col md:overflow-visible">
+      <nav aria-label="工作台功能" className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain">
         {navigation.filter((item) => item.group === "main").map((item) => (
           <NavigationButton active={activeSection === item.id} item={item} key={item.id} onClick={onSectionChange} />
         ))}
       </nav>
 
-      <nav aria-label="应用设置" className="mt-4 flex flex-row gap-1 md:flex-col">
+      <nav aria-label="应用设置" className="mt-4 flex shrink-0 flex-col gap-1">
         {navigation.filter((item) => item.group === "bottom").map((item) => (
           <NavigationButton active={activeSection === item.id} item={item} key={item.id} onClick={onSectionChange} />
         ))}
