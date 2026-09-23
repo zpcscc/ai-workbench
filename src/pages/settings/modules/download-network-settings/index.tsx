@@ -9,7 +9,7 @@ export function DownloadNetworkSettings({ state, actions }: DownloadNetworkModul
   const moduleState = useDownloadNetworkModuleState(state.settings);
   const moduleActions = createDownloadNetworkModuleActions(moduleState.form, actions);
   return (
-    <section className="app-card mt-5 p-5">
+    <section className="mt-6 border-t border-border pt-5">
       <h2 className="text-lg font-semibold">模型下载网络</h2>
       <p className="mt-1 text-sm leading-6 text-subtle">
         默认优先直连 Hugging Face。直连失败时，才尝试你配置的 HTTPS 镜像；无论使用哪个来源，模型都必须通过固定 SHA-256 校验。

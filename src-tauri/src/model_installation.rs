@@ -7,7 +7,7 @@ use std::{
         atomic::{AtomicBool, Ordering},
         Arc, Mutex, OnceLock,
     },
-    time::{SystemTime, UNIX_EPOCH},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
 use futures_util::StreamExt;
@@ -27,6 +27,7 @@ use crate::{
 
 const INSTALLATIONS_FILE: &str = "installations.json";
 static ACTIVE_DOWNLOADS: OnceLock<Mutex<HashMap<String, Arc<AtomicBool>>>> = OnceLock::new();
+static REGISTRY_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -182,7 +183,7 @@ pub async fn download_model(
         let downloaded_bytes = partial_path(&app, &model)
             .map(|path| file_size(&path))
             .unwrap_or(0);
-        let _ = emit_progress(
+        emit_progress(
             &app,
             &model.id,
             downloaded_bytes,
@@ -221,7 +222,7 @@ async fn download_and_install(
     let mut downloaded_bytes = file_size(&temp_path);
     let settings = download_network::load_settings(app).map_err(configuration_error)?;
     let client = download_network::build_client(&settings).map_err(configuration_error)?;
-    let response =
+    let mut response =
         match request_download_response(&client, model, downloaded_bytes, &settings).await {
             Ok(response) => response,
             Err(_) if cancellation.load(Ordering::Relaxed) => {
@@ -242,7 +243,15 @@ async fn download_and_install(
         ));
     }
 
-    let resumes_download = downloaded_bytes > 0 && valid_content_range(&response, downloaded_bytes);
+    let mut resumes_download =
+        downloaded_bytes > 0 && valid_content_range(&response, downloaded_bytes);
+    if downloaded_bytes > 0 && response.status() == StatusCode::PARTIAL_CONTENT && !resumes_download
+    {
+        response = request_download_response(&client, model, 0, &settings)
+            .await
+            .map_err(|message| download_error("resumeMismatch", message, true))?;
+        resumes_download = false;
+    }
     if !resumes_download {
         downloaded_bytes = 0;
     }
@@ -253,9 +262,10 @@ async fn download_and_install(
     let mut output = open_download_file(&temp_path, resumes_download)
         .map_err(|message| download_error("openPartialFile", message, true))?;
 
-    emit_progress(app, &model.id, downloaded_bytes, total_bytes, "downloading")
-        .map_err(configuration_error)?;
+    emit_progress(app, &model.id, downloaded_bytes, total_bytes, "downloading");
     let mut stream = response.bytes_stream();
+    let mut last_progress_at = Instant::now();
+    let mut last_progress_bytes = downloaded_bytes;
     while let Some(chunk) = stream.next().await {
         if cancellation.load(Ordering::Relaxed) {
             output.flush().map_err(|error| {
@@ -278,8 +288,13 @@ async fn download_and_install(
             download_error("writeFailed", format!("模型文件写入失败：{error}"), true)
         })?;
         downloaded_bytes += chunk.len() as u64;
-        emit_progress(app, &model.id, downloaded_bytes, total_bytes, "downloading")
-            .map_err(configuration_error)?;
+        if last_progress_at.elapsed() >= Duration::from_millis(100)
+            || downloaded_bytes.saturating_sub(last_progress_bytes) >= 1024 * 1024
+        {
+            emit_progress(app, &model.id, downloaded_bytes, total_bytes, "downloading");
+            last_progress_at = Instant::now();
+            last_progress_bytes = downloaded_bytes;
+        }
     }
     output.flush().map_err(|error| {
         download_error("flushFailed", format!("模型文件落盘失败：{error}"), true)
@@ -292,8 +307,7 @@ async fn download_and_install(
             true,
         ));
     }
-    emit_progress(app, &model.id, downloaded_bytes, total_bytes, "verifying")
-        .map_err(configuration_error)?;
+    emit_progress(app, &model.id, downloaded_bytes, total_bytes, "verifying");
     let expected_sha256 = model
         .download
         .sha256
@@ -325,8 +339,7 @@ async fn download_and_install(
         return Err(error);
     }
     remove_file_if_exists(&temp_path).map_err(|message| fatal_error("cleanupFailed", message))?;
-    emit_progress(app, &model.id, downloaded_bytes, total_bytes, "installed")
-        .map_err(configuration_error)?;
+    emit_progress(app, &model.id, downloaded_bytes, total_bytes, "installed");
 
     Ok(ModelDownloadResult {
         model_id: model.id.clone(),
@@ -352,11 +365,17 @@ pub fn cancel_model_download(model_id: String) -> Result<ModelCancellationResult
     })
 }
 
-pub fn has_active_downloads() -> Result<bool, String> {
-    active_downloads()
+pub fn save_storage_settings(
+    app: &AppHandle,
+    settings: model_storage::ModelStorageSettings,
+) -> Result<model_storage::ModelStorageSettings, String> {
+    let downloads = active_downloads()
         .lock()
-        .map(|downloads| !downloads.is_empty())
-        .map_err(|_| "无法访问当前下载任务。".to_string())
+        .map_err(|_| "无法访问当前下载任务。".to_string())?;
+    if !downloads.is_empty() {
+        return Err("模型下载期间不能修改存储位置，请先取消或等待下载完成。".to_string());
+    }
+    model_storage::save_settings(app, settings)
 }
 
 fn register_download(
@@ -416,8 +435,8 @@ fn emit_progress(
     downloaded_bytes: u64,
     total_bytes: u64,
     state: &str,
-) -> Result<(), String> {
-    app.emit(
+) {
+    if let Err(error) = app.emit(
         "model-download-progress",
         ModelDownloadProgress {
             model_id: model_id.to_string(),
@@ -425,8 +444,9 @@ fn emit_progress(
             total_bytes,
             state: state.to_string(),
         },
-    )
-    .map_err(|error| format!("无法发布模型下载进度：{error}"))
+    ) {
+        eprintln!("无法发布模型下载进度：{error}");
+    }
 }
 
 fn download_model_directory(app: &AppHandle, model: &ModelDefinition) -> Result<PathBuf, String> {
@@ -524,11 +544,10 @@ fn install_verified_file(temp_path: &Path, final_path: &Path) -> Result<(), Mode
 }
 
 fn restore_download_after_install_failure(temp_path: &Path, final_path: &Path) {
-    if temp_path.exists() {
-        let _ = remove_file_if_exists(final_path);
-    } else if fs::rename(final_path, temp_path).is_err() {
-        let _ = remove_file_if_exists(final_path);
+    if !temp_path.exists() && fs::rename(final_path, temp_path).is_ok() {
+        return;
     }
+    let _ = remove_file_if_exists(final_path);
 }
 
 fn calculate_sha256(path: &Path) -> Result<String, String> {
@@ -575,6 +594,9 @@ fn persist_installation(
     installed_path: &Path,
     sha256: &str,
 ) -> Result<(), ModelDownloadError> {
+    let _registry_guard = registry_lock()
+        .lock()
+        .map_err(|_| fatal_error("persistInstallState", "无法锁定模型安装记录。"))?;
     let models_dir = model_storage::registry_directory(app).map_err(configuration_error)?;
     fs::create_dir_all(&models_dir).map_err(|error| {
         fatal_error(
@@ -626,6 +648,10 @@ fn persist_installation(
             format!("无法保存模型安装记录：{error}"),
         )
     })
+}
+
+fn registry_lock() -> &'static Mutex<()> {
+    REGISTRY_LOCK.get_or_init(|| Mutex::new(()))
 }
 
 fn remove_file_if_exists(path: &Path) -> Result<(), String> {

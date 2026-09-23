@@ -8,7 +8,7 @@ export function ModelStorageFields({
   state: ModelStorageModuleState;
 }) {
   return (
-    <div className="mt-5 grid gap-4">
+    <div className="mt-4 grid gap-4">
       <StorageLocation
         isSelecting={state.selecting === "download"}
         label="模型下载位置"

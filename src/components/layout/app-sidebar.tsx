@@ -16,7 +16,7 @@ export function AppSidebar({ activeSection, onSectionChange }: SidebarProps) {
   return (
     <aside className="flex h-full w-60 shrink-0 flex-col border-r border-border bg-surface p-4">
       <div className="mb-8 shrink-0 flex items-center gap-3 px-2">
-        <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-sm font-bold text-accent-ink">A</span>
+        <span className="grid h-8 w-8 place-items-center rounded bg-accent text-sm font-bold text-accent-ink">A</span>
         <div>
           <p className="text-sm font-semibold">AI Workbench</p>
           <p className="text-xs text-subtle">本地优先</p>
@@ -41,7 +41,7 @@ export function AppSidebar({ activeSection, onSectionChange }: SidebarProps) {
 function NavigationButton({ active, item, onClick }: { active: boolean; item: (typeof navigation)[number]; onClick: SidebarProps["onSectionChange"] }) {
   return (
     <button
-      className={`flex border-0 bg-transparent items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${active ? "bg-muted font-semibold text-ink" : "text-subtle hover:bg-muted hover:text-ink"}`}
+      className={`flex border-0 bg-transparent items-center gap-3 rounded px-3 py-2.5 text-left text-sm transition-colors ${active ? "bg-muted font-semibold text-ink" : "text-subtle hover:bg-muted hover:text-ink"}`}
       onClick={() => onClick(item.id)}
       type="button"
     >

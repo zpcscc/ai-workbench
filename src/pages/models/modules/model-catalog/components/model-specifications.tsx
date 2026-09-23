@@ -3,7 +3,7 @@ import { formatGigabytes } from "../../../../../utils/format";
 
 export function ModelSpecifications({ model }: { model: ModelDefinition }) {
   return (
-    <dl className="mt-5 grid grid-cols-2 overflow-hidden rounded-lg border border-control-border bg-muted/45">
+    <dl className="mt-5 grid grid-cols-2 overflow-hidden rounded border border-control-border bg-muted/45">
       <Specification className="border-b border-r border-control-border" label="预计下载" value={formatGigabytes(model.estimatedDownloadBytes)} />
       <Specification className="border-b border-control-border" label="建议内存" value={`${model.recommendedMemoryGiB} GB+`} />
       <Specification className="border-r border-control-border" label="最低内存" value={`${model.minimumMemoryGiB} GB`} />

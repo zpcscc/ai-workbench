@@ -12,7 +12,7 @@ export function WorkbenchApp() {
   return (
     <div className="flex h-screen min-h-0 overflow-hidden bg-canvas text-ink">
       <AppSidebar activeSection={activeSection} onSectionChange={navigate} />
-      <main className={`min-w-0 min-h-0 flex-1 overscroll-contain p-6 sm:p-8 ${activeSection === "chat" ? "overflow-hidden" : "overflow-y-auto"}`}>
+      <main className={`min-w-0 min-h-0 flex-1 overscroll-contain p-5 sm:p-6 ${activeSection === "chat" ? "overflow-hidden" : "overflow-y-auto"}`}>
         {activeSection === "overview" && <OverviewPage />}
         {activeSection === "models" && <ModelCenterPage />}
         {activeSection === "chat" && <ChatPage />}

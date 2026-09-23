@@ -3,10 +3,10 @@ import type { ModelCatalogModuleActions, ModelCatalogModuleState } from "../type
 
 export function ModelGrid({ state, actions }: { state: ModelCatalogModuleState; actions: ModelCatalogModuleActions }) {
   return (
-    <div className="mt-8 grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+    <div className="mt-5 grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
       {state.models?.map((model) => (
         <ModelCard
-          downloadProgress={state.downloadProgress?.modelId === model.id ? state.downloadProgress : undefined}
+          downloadProgress={state.downloadProgress[model.id]}
           isCancelling={state.cancellingModelId === model.id}
           key={model.id}
           model={model}

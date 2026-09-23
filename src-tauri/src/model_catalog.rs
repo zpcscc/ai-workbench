@@ -1,8 +1,10 @@
-use serde::Serialize;
+use std::sync::OnceLock;
+
+use serde::{Deserialize, Serialize};
 
 const MODEL_MANIFEST: &str = include_str!("../../src/config/model-manifest.json");
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DeviceInfo {
     pub operating_system: String,
@@ -10,7 +12,7 @@ pub struct DeviceInfo {
     pub logical_cpu_cores: usize,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModelCatalog {
     pub schema_version: u32,
@@ -18,7 +20,7 @@ pub struct ModelCatalog {
     pub models: Vec<ModelDefinition>,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModelDefinition {
     pub id: String,
@@ -35,7 +37,7 @@ pub struct ModelDefinition {
     pub download: DownloadSource,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DownloadSource {
     pub enabled: bool,
@@ -59,83 +61,52 @@ impl ModelDefinition {
     }
 }
 
-#[derive(Debug, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct ManifestDocument {
-    schema_version: u32,
-    generated_at: String,
-    models: Vec<ModelDefinitionDocument>,
-}
-
-#[derive(Debug, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct ModelDefinitionDocument {
-    id: String,
-    name: String,
-    family: String,
-    capability: String,
-    quantization: String,
-    estimated_download_bytes: u64,
-    minimum_memory_gi_b: u32,
-    recommended_memory_gi_b: u32,
-    recommended: bool,
-    license: String,
-    source: String,
-    download: DownloadSourceDocument,
-}
-
-#[derive(Debug, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct DownloadSourceDocument {
-    enabled: bool,
-    provider: String,
-    base_url: String,
-    repository: String,
-    filename: String,
-    revision: String,
-    sha256: Option<String>,
-}
-
-impl From<ModelDefinitionDocument> for ModelDefinition {
-    fn from(model: ModelDefinitionDocument) -> Self {
-        Self {
-            id: model.id,
-            name: model.name,
-            family: model.family,
-            capability: model.capability,
-            quantization: model.quantization,
-            estimated_download_bytes: model.estimated_download_bytes,
-            minimum_memory_gi_b: model.minimum_memory_gi_b,
-            recommended_memory_gi_b: model.recommended_memory_gi_b,
-            recommended: model.recommended,
-            license: model.license,
-            source: model.source,
-            download: DownloadSource {
-                enabled: model.download.enabled,
-                provider: model.download.provider,
-                base_url: model.download.base_url,
-                repository: model.download.repository,
-                filename: model.download.filename,
-                revision: model.download.revision,
-                sha256: model.download.sha256,
-            },
-        }
-    }
-}
+static MODEL_CATALOG: OnceLock<Result<ModelCatalog, String>> = OnceLock::new();
 
 pub fn load_model_catalog() -> Result<ModelCatalog, String> {
-    let document: ManifestDocument = serde_json::from_str(MODEL_MANIFEST)
-        .map_err(|error| format!("无法解析内置模型清单：{error}"))?;
+    MODEL_CATALOG
+        .get_or_init(|| {
+            let catalog: ModelCatalog = serde_json::from_str(MODEL_MANIFEST)
+                .map_err(|error| format!("无法解析内置模型清单：{error}"))?;
+            if catalog.schema_version != 1 {
+                return Err(format!("不支持的模型清单版本：{}", catalog.schema_version));
+            }
+            for model in &catalog.models {
+                validate_path_segment(&model.id, "模型 ID")?;
+                validate_path_segment(&model.download.filename, "模型文件名")?;
+                validate_path_segment(&model.download.revision, "模型版本")?;
+                validate_repository(&model.download.repository)?;
+            }
+            Ok(catalog)
+        })
+        .clone()
+}
 
-    if document.schema_version != 1 {
-        return Err(format!("不支持的模型清单版本：{}", document.schema_version));
+fn validate_path_segment(value: &str, label: &str) -> Result<(), String> {
+    if value.is_empty()
+        || value.len() > 255
+        || value == "."
+        || value == ".."
+        || value.contains('/')
+        || value.contains('\\')
+        || !value.chars().all(|character| {
+            character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '.')
+        })
+    {
+        return Err(format!("内置模型清单中的{label}无效。"));
     }
+    Ok(())
+}
 
-    Ok(ModelCatalog {
-        schema_version: document.schema_version,
-        generated_at: document.generated_at,
-        models: document.models.into_iter().map(Into::into).collect(),
-    })
+fn validate_repository(value: &str) -> Result<(), String> {
+    let mut parts = value.split('/');
+    let owner = parts.next().unwrap_or_default();
+    let repository = parts.next().unwrap_or_default();
+    if parts.next().is_some() {
+        return Err("内置模型清单中的仓库路径无效。".to_string());
+    }
+    validate_path_segment(owner, "仓库所有者")?;
+    validate_path_segment(repository, "仓库名称")
 }
 
 pub fn device_info() -> DeviceInfo {
@@ -163,4 +134,32 @@ pub fn active_download_source() -> Result<DownloadSource, String> {
         .find(ModelDefinition::is_installable)
         .map(|model| model.download)
         .ok_or_else(|| "模型清单中没有已开放的下载源。".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn embedded_catalog_is_valid() {
+        let catalog = load_model_catalog().expect("embedded catalog should be valid");
+        assert_eq!(catalog.schema_version, 1);
+        assert!(!catalog.models.is_empty());
+    }
+
+    #[test]
+    fn path_segments_reject_traversal_and_separators() {
+        assert!(validate_path_segment("../model", "test").is_err());
+        assert!(validate_path_segment("folder/model.gguf", "test").is_err());
+        assert!(validate_path_segment("folder\\model.gguf", "test").is_err());
+        assert!(validate_path_segment("model.gguf?download=false", "test").is_err());
+        assert!(validate_path_segment("model.gguf", "test").is_ok());
+    }
+
+    #[test]
+    fn repository_requires_exactly_owner_and_name() {
+        assert!(validate_repository("owner/model").is_ok());
+        assert!(validate_repository("owner/model/extra").is_err());
+        assert!(validate_repository("model").is_err());
+    }
 }

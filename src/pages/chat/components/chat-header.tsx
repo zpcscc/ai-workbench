@@ -2,12 +2,12 @@ import type { LocalRuntimeState } from "../../../types/model";
 
 export function ChatHeader({ runtimeState }: { runtimeState: LocalRuntimeState }) {
   return (
-    <header>
-      <p className="text-sm font-semibold tracking-[0.14em] text-accent uppercase">AI 对话</p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight">{runtimeState === "ready" ? "本地模型已就绪" : "启动本地模型"}</h1>
-      <p className="mt-3 max-w-2xl leading-7 text-subtle">
-        使用已安装并校验通过的 GGUF 模型，在设备上完成离线文本对话。
-      </p>
+    <header className="shrink-0">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight">AI 对话</h1>
+        <span className={runtimeState === "ready" ? "text-xs font-medium text-accent" : "text-xs text-subtle"}>{runtimeState === "ready" ? "本地模型已就绪" : "本地模型未启动"}</span>
+      </div>
+      <p className="mt-1 text-sm leading-6 text-subtle">使用已校验的 GGUF 模型在设备上完成离线对话。</p>
     </header>
   );
 }

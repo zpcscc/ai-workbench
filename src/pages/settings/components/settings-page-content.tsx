@@ -11,9 +11,13 @@ export function SettingsPageContent() {
   return (
     <>
       <SettingsHeader />
-      <AppearanceSettings onThemeChange={actions.setTheme} theme={state.theme} />
-      <ModelStorageSettings actions={actions} state={state.modelStorage} />
-      <DownloadNetworkSettings actions={actions} state={state.downloadNetwork} />
+      <div className="app-card mt-5 p-5">
+        <AppearanceSettings onThemeChange={actions.setTheme} theme={state.theme} />
+      </div>
+      <div className="app-card mt-5 p-5">
+        <ModelStorageSettings actions={actions} state={state.modelStorage} />
+        <DownloadNetworkSettings actions={actions} state={state.downloadNetwork} />
+      </div>
     </>
   );
 }

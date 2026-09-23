@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import {
   cancelModelDownload,
+  cancelLocalChat,
   checkDownloadNetwork,
   downloadModel,
   getDeviceInfo,
@@ -12,11 +13,12 @@ import {
   onModelDownloadProgress,
   saveDownloadNetworkSettings,
   saveModelStorageSettings,
-  sendLocalChat,
+  streamLocalChat,
   startLocalRuntime,
   stopLocalRuntime,
 } from "../../lib/tauri/model-api";
 import type { ModelDownloadError } from "../../types/model";
+import { errorToString } from "../../utils/error";
 import type { GlobalStore } from "./types";
 
 const defaultNetworkSettings = { mirrorUrl: null, proxyUrl: null };
@@ -24,7 +26,7 @@ const defaultNetworkSettings = { mirrorUrl: null, proxyUrl: null };
 export const useAppStore = create<GlobalStore>()((set, get) => ({
   activeSection: "overview",
   theme: "system",
-  models: { installationStatuses: [] },
+  models: { installationStatuses: [], downloadProgress: {} },
   downloadNetwork: {
     settings: defaultNetworkSettings,
     isSaving: false,
@@ -39,7 +41,7 @@ export const useAppStore = create<GlobalStore>()((set, get) => ({
 
   initialize: async () => {
     if (get().isInitialized || get().isInitializing) return;
-    set({ isInitializing: true });
+    set({ isInitializing: true, initError: undefined });
     try {
       const [catalog, device, installationStatuses, settings, storageSettings, runtimeStatus] = await Promise.all([
         getModelCatalog(),
@@ -47,7 +49,7 @@ export const useAppStore = create<GlobalStore>()((set, get) => ({
         getModelInstallationStatuses(),
         getDownloadNetworkSettings(),
         getModelStorageSettings(),
-        getLocalRuntimeStatus().catch(() => ({ state: "stopped" as const, modelId: null, detail: "本地运行时未启动。" })),
+        getLocalRuntimeStatus(),
       ]);
       set((state) => ({
         models: { ...state.models, catalog, device, installationStatuses },
@@ -56,6 +58,8 @@ export const useAppStore = create<GlobalStore>()((set, get) => ({
         runtime: { status: runtimeStatus },
         isInitialized: true,
       }));
+    } catch (error) {
+      set({ initError: errorToString(error, "应用初始化失败，请重试。") });
     } finally {
       set({ isInitializing: false });
     }
@@ -63,7 +67,15 @@ export const useAppStore = create<GlobalStore>()((set, get) => ({
 
   subscribeToDownloadProgress: () =>
     onModelDownloadProgress((downloadProgress) => {
-      set((state) => ({ models: { ...state.models, downloadProgress } }));
+      set((state) => ({
+        models: {
+          ...state.models,
+          downloadProgress: {
+            ...state.models.downloadProgress,
+            [downloadProgress.modelId]: downloadProgress,
+          },
+        },
+      }));
     }),
 
   navigate: (activeSection) => set({ activeSection }),
@@ -78,10 +90,13 @@ export const useAppStore = create<GlobalStore>()((set, get) => ({
         ...state.models,
         downloadError: undefined,
         downloadProgress: {
-          modelId,
-          downloadedBytes: status?.partialBytes ?? 0,
-          totalBytes: model?.estimatedDownloadBytes ?? 0,
-          state: "downloading",
+          ...state.models.downloadProgress,
+          [modelId]: {
+            modelId,
+            downloadedBytes: status?.partialBytes ?? 0,
+            totalBytes: model?.estimatedDownloadBytes ?? 0,
+            state: "downloading",
+          },
         },
       },
     }));
@@ -99,7 +114,11 @@ export const useAppStore = create<GlobalStore>()((set, get) => ({
       }
     } finally {
       const installationStatuses = await getModelInstallationStatuses();
-      set((state) => ({ models: { ...state.models, installationStatuses } }));
+      set((state) => {
+        const downloadProgress = { ...state.models.downloadProgress };
+        delete downloadProgress[modelId];
+        return { models: { ...state.models, installationStatuses, downloadProgress } };
+      });
     }
   },
 
@@ -116,7 +135,7 @@ export const useAppStore = create<GlobalStore>()((set, get) => ({
       set((state) => ({
         models: {
           ...state.models,
-          downloadError: error instanceof Error ? error.message : "无法取消模型下载，请稍后重试。",
+          downloadError: errorToString(error, "无法取消模型下载，请稍后重试。"),
         },
       }));
     } finally {
@@ -136,7 +155,7 @@ export const useAppStore = create<GlobalStore>()((set, get) => ({
       set((state) => ({
         downloadNetwork: {
           ...state.downloadNetwork,
-          error: error instanceof Error ? error.message : "保存下载网络设置失败。",
+          error: errorToString(error, "保存下载网络设置失败。"),
         },
       }));
       throw error;
@@ -156,7 +175,7 @@ export const useAppStore = create<GlobalStore>()((set, get) => ({
       set((state) => ({
         downloadNetwork: {
           ...state.downloadNetwork,
-          error: error instanceof Error ? error.message : "网络检测失败。",
+          error: errorToString(error, "网络检测失败。"),
         },
       }));
     } finally {
@@ -178,7 +197,7 @@ export const useAppStore = create<GlobalStore>()((set, get) => ({
       set((state) => ({
         modelStorage: {
           ...state.modelStorage,
-          error: errorMessage(error, "保存模型存储设置失败。"),
+          error: errorToString(error, "保存模型存储设置失败。"),
         },
       }));
       throw error;
@@ -193,7 +212,7 @@ export const useAppStore = create<GlobalStore>()((set, get) => ({
       const status = await startLocalRuntime(modelId);
       set({ runtime: { status } });
     } catch (error) {
-      const message = errorMessage(error, "本地运行时启动失败。");
+      const message = errorToString(error, "本地运行时启动失败。");
       set({ runtime: { status: { state: "error", modelId, detail: message }, error: message } });
     }
   },
@@ -203,18 +222,14 @@ export const useAppStore = create<GlobalStore>()((set, get) => ({
       const status = await stopLocalRuntime();
       set({ runtime: { status } });
     } catch (error) {
-      const message = errorMessage(error, "无法停止本地运行时。");
+      const message = errorToString(error, "无法停止本地运行时。");
       set((state) => ({ runtime: { ...state.runtime, error: message } }));
     }
   },
 
-  sendLocalChat,
+  streamLocalChat,
+  cancelLocalChat,
 }));
-
-function errorMessage(error: unknown, fallback: string) {
-  if (typeof error === "string" && error) return error;
-  return error instanceof Error ? error.message : fallback;
-}
 
 function normalizeDownloadError(error: unknown): ModelDownloadError {
   if (typeof error === "object" && error !== null && "message" in error) {

@@ -25,6 +25,9 @@ export default defineConfig({
     },
   },
   shortcuts: {
-    "app-card": "rounded-xl border border-control-border bg-surface",
+    "app-card": "rounded border border-control-border bg-surface",
   },
+  rules: [
+    ["rounded", { "border-radius": "var(--radius)" }],
+  ],
 });

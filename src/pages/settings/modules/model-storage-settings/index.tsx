@@ -9,7 +9,7 @@ export function ModelStorageSettings({ state, actions }: ModelStorageModuleProps
   const moduleState = useModelStorageModuleState(state.settings);
   const moduleActions = createModelStorageModuleActions(moduleState.form, state.settings, moduleState, actions);
   return (
-    <section className="app-card mt-5 p-5">
+    <section>
       <h2 className="text-lg font-semibold">模型存储</h2>
       <p className="mt-1 text-sm leading-6 text-subtle">
         分别选择断点下载临时文件和校验后模型的存放文件夹；未选择时使用应用专属数据目录。

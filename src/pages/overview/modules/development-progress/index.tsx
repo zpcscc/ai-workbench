@@ -6,9 +6,9 @@ const progressItems = [
 
 export function DevelopmentProgress() {
   return (
-    <section className="mt-8">
+    <section className="mt-6">
       <h2 className="text-lg font-semibold">开发进度</h2>
-      <ol className="mt-4 grid list-none gap-3 p-0 text-sm md:grid-cols-3">
+      <ol className="mt-3 grid list-none gap-3 p-0 text-sm md:grid-cols-3">
         {progressItems.map((item) => (
           <li className="app-card p-4" key={item.number}>
             <span className={item.active ? "text-accent" : "text-subtle"}>{item.number}</span>

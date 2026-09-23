@@ -1,5 +1,5 @@
 import type { GlobalState } from "../../state/global";
-import type { LocalChatMessage, ModelDefinition } from "../../types/model";
+import type { LocalChatGenerationOptions, LocalChatMessage, LocalChatStreamChunk, LocalChatStreamResult, ModelDefinition } from "../../types/model";
 
 export type ChatPageState = {
   runtime: GlobalState["runtime"];
@@ -9,5 +9,11 @@ export type ChatPageState = {
 export type ChatPageActions = {
   startRuntime: () => void;
   stopRuntime: () => void;
-  sendMessage: (messages: LocalChatMessage[]) => Promise<LocalChatMessage>;
+  sendMessage: (
+    requestId: string,
+    messages: LocalChatMessage[],
+    options: LocalChatGenerationOptions,
+    onChunk: (chunk: LocalChatStreamChunk) => void,
+  ) => Promise<LocalChatStreamResult>;
+  stopMessage: (requestId: string) => Promise<void>;
 };

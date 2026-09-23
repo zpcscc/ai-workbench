@@ -99,6 +99,28 @@ export type LocalRuntimeStatus = {
 };
 
 export type LocalChatMessage = {
+  id: string;
   role: "system" | "user" | "assistant";
   content: string;
+};
+
+export type LocalChatGenerationOptions = {
+  temperature: number;
+  maxTokens: number;
+};
+
+export type LocalChatStreamChunk = {
+  requestId: string;
+  content: string;
+};
+
+export type LocalChatStreamResult = {
+  requestId: string;
+  cancelled: boolean;
+  content: string;
+};
+
+export type LocalChatCancellationResult = {
+  requestId: string;
+  cancellationRequested: boolean;
 };

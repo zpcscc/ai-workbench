@@ -9,7 +9,7 @@ export type ModelCatalogModuleState = {
   models?: ModelDefinition[];
   pendingModel?: ModelDefinition;
   installationStatuses: ModelInstallationStatus[];
-  downloadProgress?: ModelDownloadProgress;
+  downloadProgress: Record<string, ModelDownloadProgress>;
   downloadError?: string;
   cancellingModelId?: string;
   runtimeStatus: LocalRuntimeStatus;

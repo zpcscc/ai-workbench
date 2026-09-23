@@ -8,6 +8,10 @@ import type {
   ModelInstallationStatus,
   ModelStorageSettings,
   LocalChatMessage,
+  LocalChatGenerationOptions,
+  LocalChatCancellationResult,
+  LocalChatStreamChunk,
+  LocalChatStreamResult,
   LocalRuntimeStatus,
 } from "../../types/model";
 import type { WorkspaceSection } from "../../types/navigation";
@@ -19,7 +23,7 @@ export type GlobalState = {
     catalog?: ModelCatalog;
     device?: DeviceInfo;
     installationStatuses: ModelInstallationStatus[];
-    downloadProgress?: ModelDownloadProgress;
+    downloadProgress: Record<string, ModelDownloadProgress>;
     downloadError?: string;
     cancellingModelId?: string;
   };
@@ -51,12 +55,19 @@ export type GlobalActions = {
   saveModelStorageSettings: (settings: ModelStorageSettings) => Promise<ModelStorageSettings>;
   startLocalRuntime: (modelId: string) => Promise<void>;
   stopLocalRuntime: () => Promise<void>;
-  sendLocalChat: (messages: LocalChatMessage[]) => Promise<LocalChatMessage>;
+  streamLocalChat: (
+    requestId: string,
+    messages: LocalChatMessage[],
+    options: LocalChatGenerationOptions,
+    onChunk: (chunk: LocalChatStreamChunk) => void,
+  ) => Promise<LocalChatStreamResult>;
+  cancelLocalChat: (requestId: string) => Promise<LocalChatCancellationResult>;
 };
 
 export type GlobalStore = {
   isInitialized: boolean;
   isInitializing: boolean;
+  initError?: string;
   initialize: () => Promise<void>;
   subscribeToDownloadProgress: () => Promise<() => void>;
 } & GlobalState & GlobalActions;
